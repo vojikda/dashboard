@@ -154,9 +154,23 @@
       errEl.classList.toggle("show", Boolean(msg));
     }
 
+    /**
+     * Excel / SheetJS někdy vrací „5 000“ s \u202f (úzká mezera). parseFloat pak vezme jen „5“.
+     */
+    function parseCellNumber(v) {
+      if (v == null || v === "") return NaN;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      let s = String(v).trim().replace(/[\s\u00a0\u202f\u2007\u2008\u2009]+/g, "");
+      if (/^-?\d+,\d{1,2}$/.test(s)) return parseFloat(s.replace(",", "."));
+      if (/^-?\d+\.\d+$/.test(s) && (s.match(/\./g) || []).length === 1) return parseFloat(s);
+      s = s.replace(/,/g, "").replace(/\./g, "");
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
     function parseBook(wb) {
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: false });
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
       if (!rows.length) throw new Error("Tabulka je prázdná.");
 
       const header = rows[0].map((c) => (c == null ? "" : String(c).trim()));
@@ -179,7 +193,7 @@
         const metrics = {};
         for (const { col, key } of keys) {
           const v = row[col];
-          const n = typeof v === "number" ? v : parseFloat(String(v).replace(/\s/g, "").replace(",", "."));
+          const n = parseCellNumber(v);
           metrics[key] = Number.isFinite(n) ? n : null;
         }
         traders.push({ name, metrics });
