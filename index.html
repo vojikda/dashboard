@@ -66,9 +66,8 @@
       margin-bottom: 1rem;
     }
     .card-name .label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-size: 0.75rem;
+      letter-spacing: 0.02em;
       color: var(--muted);
       font-weight: 600;
       margin-bottom: 0.35rem;
@@ -106,9 +105,8 @@
       box-shadow: var(--shadow);
     }
     .metric .k {
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: 0.75rem;
+      letter-spacing: 0.02em;
       color: var(--muted);
       font-weight: 600;
       margin-bottom: 0.4rem;
@@ -138,8 +136,15 @@
   </div>
 
   <script>
-    const nf = new Intl.NumberFormat("cs-CZ");
+    const nfInt = new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 0, useGrouping: true });
     const ORDER = ["Provize", "eKoruny", "Produkce", "Smlouvy"];
+
+    /** Popisek sloupce tak, jak má být zobrazen (Excel může mít jinou velikost písmen). */
+    function metricLabel(key) {
+      const k = String(key);
+      if (k === "eKoruny" || k.toLowerCase() === "ekoruny") return "EKoruny";
+      return k;
+    }
 
     const errEl = document.getElementById("err");
     const appEl = document.getElementById("app");
@@ -188,7 +193,9 @@
 
     function formatNum(v) {
       if (v == null || Number.isNaN(v)) return "—";
-      return nf.format(v);
+      const n = Number(v);
+      const s = nfInt.format(Math.round(n));
+      return s.replace(/\u202f|\u00a0/g, " ");
     }
 
     function orderedKeys(categories) {
@@ -231,7 +238,7 @@
           .map((k) => {
             const wide = keys.length % 2 === 1 && k === keys[keys.length - 1];
             return `<div class="metric${wide ? " wide" : ""}">
-              <div class="k">${escapeHtml(k)}</div>
+              <div class="k">${escapeHtml(metricLabel(k))}</div>
               <div class="v">${formatNum(t.metrics[k])}</div>
             </div>`;
           })
